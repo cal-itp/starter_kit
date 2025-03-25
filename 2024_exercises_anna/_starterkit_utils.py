@@ -192,4 +192,82 @@ def create_district_summary(df: pd.DataFrame, caltrans_district: int):
         """
         )
     )
-    display(create_metric_chart(df2))
+    display(create_metric_chart(df2))    
+    
+    
+OTHER = "Other"
+
+def add_and(s: str) -> str:
+        """Replace empty strings with OTHER, otherwise replace the last ', ' with ', and' or 'and' where correct"""
+        last_pos = s.rfind(", ")
+        if last_pos == -1:
+            return OTHER if s == "" else s
+        count_commas = s.count(", ")
+        if count_commas > 1:
+            return f"{s[:last_pos]}, and {s[last_pos+2:]}"
+        else: 
+            return f"{s[:last_pos]} and {s[last_pos+2:]}"
+    
+def format_int_as_cost(val):
+    return f"${val:,.2f}"
+    
+def create_category_summary(project_scores_with_category: pd.DataFrame, category: list[str]):
+    """
+    Create a summary of how CSIS metrics for projects within a specified category differe in each district
+    """
+    # Filter projects for only the selected category
+    project_scores_filtered = project_scores_with_category.loc[
+        project_scores_with_category[category].replace({
+            "Y": True, "N": False
+        }).all(axis=1)
+    ]
+    # Finding the values referenced in the narrative
+    median_score = project_scores_filtered["Overall Score"].median()
+    total_projects = project_scores_filtered["Project Name"].nunique()
+    max_project_cost = project_scores_filtered["Project Cost"].max()
+    max_project_cost_str = format_int_as_cost(max_project_cost)
+    
+    # Aggregate the relevant values in the DataFrame by district
+    aggregated_df = project_scores_filtered.groupby("Caltrans District").agg({
+        "Overall Score": "median",s
+        "Project Name": "nunique",
+        "Project Cost": "max",
+    }).rename(columns={
+        "Overall Score": "Median Overall Score",
+        "Project Name": "# Projects",
+        "Project Cost": "Max Project Cost",
+    }).reset_index()
+    aggregated_df["Max Project Cost"] = aggregated_df["Max Project Cost"].map(format_int_as_cost).astype(str)
+    df_long = wide_to_long(project_scores_filtered)
+    
+    category_string = add_and(", ".join(category))
+    
+    # Create narrative
+    display(
+        Markdown(
+            f"""The median score for projects in category {category_string} is <b>{int(median_score)}</b><br>
+            There are {total_projects} projects.<br>
+            The most expensive project costs {max_project_cost_str}<br>
+            """
+        )
+    )
+    display(
+        Markdown(
+            "### Metrics Aggregated by Districts"
+        )
+    )
+    style_df(aggregated_df)
+    display(
+        Markdown(
+            "### Overview of Projects"
+        )
+    )
+    style_df(project_scores_filtered[["Project Name", "Overall Score", "Scope Of Work"]])
+    display(
+        Markdown(
+            "### Metric Scores by Projects"
+        )
+    )
+    display(create_metric_chart(df_long))
+    
+    
