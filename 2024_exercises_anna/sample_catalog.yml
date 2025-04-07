@@ -1,0 +1,15 @@
+metadata:
+    version: 1
+sources:
+    caltrans_open_data:
+        driver: dcat
+        args:
+            url: https://gisdata-caltrans.opendata.arcgis.com/data.json
+            items:
+                ca_county_boundaries: https://www.arcgis.com/home/item.html?id=111030d0d67e49d789080c47d9e4e618&sublayer=0
+    lehd_federal_jobs_by_tract:
+        driver: parquet
+        description: LEHD Workplace Area Characteristics (WAC) federal jobs by census tract.
+        args:
+          urlpath: gs://calitp-analytics-data/data-analyses/bus_service_increase/wac_fed_tract.parquet
+          engine: pyarrow
